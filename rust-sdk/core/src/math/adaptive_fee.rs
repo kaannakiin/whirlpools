@@ -345,7 +345,6 @@ impl FeeRateManager {
         }
     }
 
-    #[allow(dead_code)]
     pub fn get_next_adaptive_fee_info(&self) -> Option<AdaptiveFeeInfo> {
         match self {
             Self::Static { .. } => None,
