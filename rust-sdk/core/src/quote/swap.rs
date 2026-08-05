@@ -179,6 +179,12 @@ pub struct SwapResult {
     pub post_liquidity: u128,
     /// Total fee rate applied to the final step of the swap
     pub post_fee_rate: u32,
+    /// Adaptive-fee oracle state after the swap, `None` on a static-fee pool.
+    ///
+    /// This is what the program writes back to the Oracle account, so feeding it to a
+    /// second `compute_swap` at the same timestamp prices the pool the way the chain
+    /// would price a trade landing behind this one.
+    pub post_adaptive_fee_info: Option<AdaptiveFeeInfo>,
 }
 
 /// Computes the amounts of tokens A and B based on the current Whirlpool state and tick sequence.
@@ -385,6 +391,7 @@ pub fn compute_swap<const SIZE: usize>(
         post_tick_index: current_tick_index,
         post_liquidity: current_liquidity,
         post_fee_rate: last_total_fee_rate.unwrap_or(base_fee_rate as u32),
+        post_adaptive_fee_info: fee_rate_manager.get_next_adaptive_fee_info(),
     })
 }
 
