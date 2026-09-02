@@ -332,7 +332,7 @@ pub fn compute_swap<const SIZE: usize>(
             }
 
             if step_quote.next_sqrt_price == next_tick_sqrt_price {
-                current_liquidity = get_next_liquidity(current_liquidity, next_tick, a_to_b);
+                current_liquidity = get_next_liquidity(current_liquidity, next_tick, a_to_b)?;
                 current_tick_index = if a_to_b {
                     next_tick_index - 1
                 } else {
@@ -401,20 +401,15 @@ fn get_next_liquidity(
     current_liquidity: u128,
     next_tick: Option<&TickFacade>,
     a_to_b: bool,
-) -> u128 {
+) -> Result<u128, CoreError> {
     let liquidity_net = next_tick.map(|tick| tick.liquidity_net).unwrap_or(0);
     let liquidity_net_unsigned = liquidity_net.unsigned_abs();
-    if a_to_b {
-        if liquidity_net < 0 {
-            current_liquidity + liquidity_net_unsigned
-        } else {
-            current_liquidity - liquidity_net_unsigned
-        }
-    } else if liquidity_net < 0 {
-        current_liquidity - liquidity_net_unsigned
+    let next = if a_to_b == (liquidity_net < 0) {
+        current_liquidity.checked_add(liquidity_net_unsigned)
     } else {
-        current_liquidity + liquidity_net_unsigned
-    }
+        current_liquidity.checked_sub(liquidity_net_unsigned)
+    };
+    next.ok_or(ARITHMETIC_OVERFLOW)
 }
 
 struct SwapStepQuote {
