@@ -1,10 +1,12 @@
+use core::borrow::Borrow;
+
 use crate::{
     sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee,
     try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance,
     try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a,
     try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
     AdaptiveFeeInfo, CoreError, ExactInSwapQuote, ExactOutSwapQuote, FeeRateManager, OracleFacade,
-    TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade,
+    TickArrayFacade, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade,
     AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_ADAPTIVE_FEE_INFO,
     INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
     SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
@@ -209,11 +211,11 @@ pub struct SwapResult {
 /// - This function doesn't take into account slippage tolerance.
 /// - This function doesn't take into account transfer fee extension.
 #[allow(clippy::too_many_arguments)]
-pub fn compute_swap<const SIZE: usize>(
+pub fn compute_swap<const SIZE: usize, T: Borrow<TickArrayFacade>>(
     token_amount: u64,
     sqrt_price_limit: u128,
     whirlpool: WhirlpoolFacade,
-    tick_sequence: &TickArraySequence<SIZE>,
+    tick_sequence: &TickArraySequence<SIZE, T>,
     a_to_b: bool,
     specified_input: bool,
     timestamp: u64,

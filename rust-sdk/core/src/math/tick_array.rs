@@ -1,3 +1,5 @@
+use core::borrow::Borrow;
+
 use crate::{
     CoreError, TickArrayFacade, TickFacade, INVALID_TICK_ARRAY_SEQUENCE, INVALID_TICK_INDEX,
     MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE,
@@ -9,15 +11,17 @@ use super::{
     get_prev_initializable_tick_index,
 };
 
+/// `T` lets a caller that keeps its arrays behind a pointer (`&` or `Arc`)
+/// build a sequence without copying the arrays; the default owns them.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TickArraySequence<const SIZE: usize> {
-    pub tick_arrays: [Option<TickArrayFacade>; SIZE],
+pub struct TickArraySequence<const SIZE: usize, T = TickArrayFacade> {
+    pub tick_arrays: [Option<T>; SIZE],
     pub tick_spacing: u16,
 }
 
-impl<const SIZE: usize> TickArraySequence<SIZE> {
+impl<const SIZE: usize, T: Borrow<TickArrayFacade>> TickArraySequence<SIZE, T> {
     pub fn new(
-        tick_arrays: [Option<TickArrayFacade>; SIZE],
+        tick_arrays: [Option<T>; SIZE],
         tick_spacing: u16,
     ) -> Result<Self, CoreError> {
         let mut tick_arrays = tick_arrays;
@@ -127,17 +131,17 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
 
 // internal functions
 
-fn start_tick_index(tick_array: &Option<TickArrayFacade>) -> i32 {
+fn start_tick_index<T: Borrow<TickArrayFacade>>(tick_array: &Option<T>) -> i32 {
     if let Some(tick_array) = tick_array {
-        tick_array.start_tick_index
+        tick_array.borrow().start_tick_index
     } else {
         <i32>::MAX
     }
 }
 
-fn ticks(tick_array: &Option<TickArrayFacade>) -> &[TickFacade] {
+fn ticks<T: Borrow<TickArrayFacade>>(tick_array: &Option<T>) -> &[TickFacade] {
     if let Some(tick_array) = tick_array {
-        &tick_array.ticks
+        &tick_array.borrow().ticks
     } else {
         &[]
     }
